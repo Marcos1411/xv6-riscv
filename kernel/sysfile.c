@@ -328,6 +328,17 @@ sys_open(void)
       return -1;
     }
     ilock(ip);
+
+    // Validar permisos del archivo
+    if((ip->permissions == 0) ||                                      // Sin acceso
+       (ip->permissions == 1 && (omode & (O_WRONLY | O_RDWR))) ||     // Solo lectura, pero se intenta escribir
+       (ip->permissions == 2 && !(omode & O_WRONLY)) ||               // Solo escritura, pero se intenta leer
+       (ip->permissions == 5)) {                                     // Inmutable
+      iunlockput(ip);
+      end_op();
+      return -1;
+    }
+
     if(ip->type == T_DIR && omode != O_RDONLY){
       iunlockput(ip);
       end_op();
@@ -369,6 +380,7 @@ sys_open(void)
 
   return fd;
 }
+
 
 uint64
 sys_mkdir(void)

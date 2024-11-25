@@ -6,6 +6,52 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "syscall.h"
+#include "fs.h"
+#include "file.h"
+
+uint64
+sys_chmod(void)
+{
+    char path[MAXPATH];
+    int mode;
+    struct inode *ip;
+
+    // Obtener argumentos de la syscall
+    if (argstr(0, path, MAXPATH) < 0)  // Extraer el nombre del archivo
+        return -1;
+    argint(1, &mode);                  // Extraer el modo (entero)
+    if (mode < 0 || mode > 5)          // Validar que el modo sea válido
+        return -1;
+
+    begin_op();
+
+    // Buscar el inodo del archivo especificado por path
+    if ((ip = namei(path)) == 0) {
+        end_op();
+        return -1;
+    }
+
+    ilock(ip);
+
+    // Validar si el archivo es inmutable
+    if (ip->permissions == 5) {
+        iunlockput(ip);
+        end_op();
+        return -1; // No se pueden cambiar los permisos de un archivo inmutable
+    }
+
+    // Actualizar permisos
+    ip->permissions = mode;
+
+    // Guardar cambios en el disco
+    iupdate(ip);
+
+    iunlockput(ip);
+    end_op();
+
+    return 0;
+}
+
 
 
 uint64
