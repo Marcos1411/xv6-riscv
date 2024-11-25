@@ -7,6 +7,86 @@
 #include "proc.h"
 #include "syscall.h"
 
+
+uint64
+sys_mprotect(void)
+{
+    uint64 addr;
+    int len;
+
+    // Obtener los argumentos directamente
+    argaddr(0, &addr);
+    argint(1, &len);
+
+    // Validar los valores extraídos
+    if (addr % PGSIZE != 0 || len <= 0)
+        return -1;
+
+    struct proc *p = myproc();
+    uint64 start = addr;
+    uint64 end = addr + len * PGSIZE;
+
+    // Validar que la región pertenece al proceso
+    if (start >= p->sz || end > p->sz)
+        return -1;
+
+    // Recorre las páginas y modifica los permisos
+    for (uint64 a = start; a < end; a += PGSIZE) {
+        pte_t *pte = walk(p->pagetable, a, 0);
+        if (!pte || !(*pte & PTE_V))
+            return -1; // Dirección inválida
+
+        *pte &= ~PTE_W; // Deshabilitar escritura
+    }
+
+    sfence_vma(); // Invalidar TLB
+    return 0;
+}
+
+
+
+// Implementación de sys_munprotect
+uint64
+sys_munprotect(void)
+{
+    uint64 addr;
+    int len;
+
+    // Obtener los argumentos directamente
+    argaddr(0, &addr);
+    argint(1, &len);
+
+    // Validar los valores extraídos
+    if (addr % PGSIZE != 0 || len <= 0)
+        return -1;
+
+    struct proc *p = myproc();
+    uint64 start = addr;
+    uint64 end = addr + len * PGSIZE;
+
+    // Validar que la región pertenece al proceso
+    if (start >= p->sz || end > p->sz)
+        return -1;
+
+    // Recorre las páginas y restaura los permisos
+    for (uint64 a = start; a < end; a += PGSIZE) {
+        pte_t *pte = walk(p->pagetable, a, 0);
+        if (!pte || !(*pte & PTE_V))
+            return -1; // Dirección inválida
+
+        *pte |= PTE_W; // Habilitar escritura
+    }
+
+    sfence_vma(); // Invalidar TLB
+    return 0;
+}
+
+
+
+
+
+
+
 uint64
 sys_exit(void)
 {

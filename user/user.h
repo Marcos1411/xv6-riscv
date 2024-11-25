@@ -1,3 +1,5 @@
+#include "types.h"
+
 struct stat;
 
 // system calls
@@ -25,6 +27,10 @@ int uptime(void);
 int getppid(void);
 int getancestor(int);
 int syscall(int num);
+
+
+int mprotect(void *addr, int len);
+int munprotect(void *addr, int len);
 
 
 // ulib.c

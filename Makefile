@@ -135,6 +135,7 @@ UPROGS=\
 	$U/_zombie\
 	$U/_test_getancestor\
 	$U/_prioritytest\
+	$U/_testmprotect\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
